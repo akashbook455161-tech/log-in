@@ -1,138 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Secure Drive Access</title>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js"></script>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drive Links Portal</title>
+<style>
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: white;
-      text-align: center;
-      padding: 20px;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(120deg, #0f0c29, #302b63, #24243e);
+        color: white;
+        margin: 0;
+        padding: 0;
+        text-align: center;
     }
     .container {
-      max-width: 400px;
-      margin: auto;
-      background: rgba(255,255,255,0.1);
-      padding: 20px;
-      border-radius: 15px;
-      backdrop-filter: blur(5px);
+        max-width: 400px;
+        margin: auto;
+        background: rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 12px;
+        margin-top: 50px;
     }
     input, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
+        width: 90%;
+        padding: 10px;
+        margin: 8px 0;
+        border: none;
+        border-radius: 6px;
     }
     button {
-      background: #1abc9c;
-      color: white;
-      cursor: pointer;
+        background: #6a11cb;
+        color: white;
+        cursor: pointer;
     }
-    button:hover {
-      background: #16a085;
+    button:hover { background: #2575fc; }
+    .hidden { display: none; }
+    .folder {
+        display: inline-block;
+        margin: 15px;
+        text-align: center;
     }
-    a.drive-link {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 15px 20px;
-      background: #3498db;
-      border-radius: 10px;
-      text-decoration: none;
-      color: white;
-      font-weight: bold;
-      transition: background 0.3s;
+    .folder img {
+        width: 80px;
+        cursor: pointer;
     }
-    a.drive-link:hover {
-      background: #2980b9;
-    }
-  </style>
+</style>
 </head>
 <body>
-  <div class="container" id="loginContainer">
+
+<div id="loginDiv" class="container">
     <h2>Login</h2>
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
     <button onclick="login()">Login</button>
-  </div>
+    <p id="loginError" style="color:red;"></p>
+</div>
 
-  <div class="container" id="contentContainer" style="display:none;">
-    <h2>Welcome Admin</h2>
-    <div id="driveLinks"></div>
-    <hr />
-    <h3>Change Password</h3>
-    <input type="password" id="newPassword" placeholder="New Password" />
-    <button onclick="changePassword()">Update Password</button>
-    <br /><br />
+<div id="linksDiv" class="container hidden">
+    <h2>Google Drive Links</h2>
+    <div id="linksContainer"></div>
     <button onclick="logout()">Logout</button>
-  </div>
+</div>
 
-  <script>
-    // Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyC-BfyabQukg0o5X71vGQ0pbiDpbyHupr4",
-      authDomain: "page-1-9f164.firebaseapp.com",
-      projectId: "page-1-9f164",
-      storageBucket: "page-1-9f164.firebasestorage.app",
-      messagingSenderId: "136528254875",
-      appId: "1:136528254875:web:f932b653c6692a02e1333e",
-      measurementId: "G-G3FR134L6M"
-    };
+<div id="adminDiv" class="container hidden">
+    <h2>Admin Panel</h2>
+    <input type="text" id="folderName" placeholder="Folder Name">
+    <input type="text" id="folderLink" placeholder="Folder Link">
+    <button onclick="addLink()">Add Link</button>
+    <h3>Change Password</h3>
+    <input type="password" id="newPassword" placeholder="New Password">
+    <button onclick="changePassword()">Update Password</button>
+</div>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-    // Login function
-    function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          loadDriveLinks();
-          document.getElementById('loginContainer').style.display = 'none';
-          document.getElementById('contentContainer').style.display = 'block';
-        })
-        .catch(error => alert(error.message));
+const firebaseConfig = {
+  apiKey: "AIzaSyC-BfyabQukg0o5X71vGQ0pbiDpbyHupr4",
+  authDomain: "page-1-9f164.firebaseapp.com",
+  projectId: "page-1-9f164",
+  storageBucket: "page-1-9f164.firebasestorage.app",
+  messagingSenderId: "136528254875",
+  appId: "1:136528254875:web:f932b653c6692a02e1333e",
+  measurementId: "G-G3FR134L6M"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const adminUID = "olzATy6T2fhr2ebUBnzGWiACoQC3";
+
+async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById("loginDiv").classList.add("hidden");
+        document.getElementById("linksDiv").classList.remove("hidden");
+        if (userCredential.user.uid === adminUID) {
+            document.getElementById("adminDiv").classList.remove("hidden");
+        }
+        loadLinks();
+    } catch (error) {
+        document.getElementById("loginError").innerText = error.message;
     }
+}
 
-    // Load Drive Links from Firestore
-    function loadDriveLinks() {
-      db.collection("data").doc("server1").get()
-        .then(doc => {
-          if (doc.exists) {
-            const link = doc.data().link;
-            document.getElementById('driveLinks').innerHTML = `<a class="drive-link" href="${link}" target="_blank">📂 Open Google Drive</a>`;
-          } else {
-            document.getElementById('driveLinks').innerHTML = "No link found.";
-          }
-        })
-        .catch(error => console.error("Error getting document:", error));
-    }
+async function loadLinks() {
+    const querySnapshot = await getDocs(collection(db, "driveLinks"));
+    const container = document.getElementById("linksContainer");
+    container.innerHTML = "";
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+        container.innerHTML += `
+        <div class="folder">
+            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991110.png" onclick="window.open('${data.link}', '_blank')">
+            <p>${data.name}</p>
+        </div>`;
+    });
+}
 
-    // Change Password
-    function changePassword() {
-      const newPass = document.getElementById('newPassword').value;
-      const user = auth.currentUser;
-      user.updatePassword(newPass)
-        .then(() => alert("Password updated successfully"))
-        .catch(error => alert(error.message));
-    }
+async function addLink() {
+    const name = document.getElementById("folderName").value;
+    const link = document.getElementById("folderLink").value;
+    if (!name || !link) return alert("Fill all fields");
+    await addDoc(collection(db, "driveLinks"), { name, link });
+    alert("Link Added");
+    loadLinks();
+}
 
-    // Logout
-    function logout() {
-      auth.signOut().then(() => {
-        document.getElementById('loginContainer').style.display = 'block';
-        document.getElementById('contentContainer').style.display = 'none';
-      });
+async function changePassword() {
+    const newPass = document.getElementById("newPassword").value;
+    if (!newPass) return alert("Enter new password");
+    try {
+        await updatePassword(auth.currentUser, newPass);
+        alert("Password updated");
+    } catch (err) {
+        alert(err.message);
     }
-  </script>
+}
+
+function logout() {
+    signOut(auth).then(() => {
+        location.reload();
+    });
+}
+
+window.login = login;
+window.logout = logout;
+window.addLink = addLink;
+window.changePassword = changePassword;
+
+</script>
 </body>
 </html>
