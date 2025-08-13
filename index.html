@@ -130,15 +130,15 @@
       else if (hours >= 17) greetText = "Good Evening";
       greeting.textContent = `${greetText} Akash`;
 
-      // Fetch Server link from Firestore
-      const docRef = doc(db, "serverLinks", user.uid);
+      // Fetch Server link from Firestore (data / server1 / link)
+      const docRef = doc(db, "data", "server1");
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        const link = docSnap.data().gdrive;
+        const link = docSnap.data().link;
         serverBtn.style.display = "block";
         serverBtn.onclick = () => window.open(link, "_blank");
       } else {
-        alert("No server link found for your account.");
+        alert("No server link found.");
       }
     } else {
       loginContainer.style.display = "block";
