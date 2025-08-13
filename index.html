@@ -1,81 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Server Link Manager</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-    input, button { padding: 10px; margin: 5px; width: 80%; max-width: 400px; }
-    a { color: blue; text-decoration: none; }
-    .container { background: #f8f8f8; padding: 20px; border-radius: 10px; display: inline-block; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protected Links</title>
+<style>
+body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f0f0; }
+#login { text-align: center; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
+input { padding: 10px; margin: 5px; width: 200px; }
+button { padding: 10px 20px; margin-top: 10px; cursor: pointer; }
+#links { display: none; margin-top: 20px; text-align: left; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2>Server Link Manager</h2>
-    <p>Current Link:</p>
-    <p id="currentLink">Loading...</p>
+<div id="login">
+    <h2>Enter Password to Access Links</h2>
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="checkPassword()">Submit</button>
+    <div id="links"></div>
+</div>
 
-    <input type="text" id="newLink" placeholder="Enter new link">
-    <button onclick="updateLink()">Update Link</button>
-  </div>
+<script>
+async function checkPassword() {
+    const password = document.getElementById('password').value;
 
-  <!-- Firebase Scripts -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    const response = await fetch('/.netlify/functions/check-password', {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+    });
 
-  <script>
-    // Your Firebase Config
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
+    const result = await response.json();
 
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    let userUID = "";
-
-    auth.signInAnonymously().then(() => {
-      auth.onAuthStateChanged(user => {
-        if (user) {
-          userUID = user.uid;
-          loadLink();
-        }
-      });
-    }).catch(error => console.error(error));
-
-    function loadLink() {
-      db.collection("serverLinks").doc(userUID).get()
-        .then(doc => {
-          if (doc.exists) {
-            const link = doc.data().link;
-            document.getElementById("currentLink").innerHTML =
-              `<a href="${link}" target="_blank">${link}</a>`;
-          } else {
-            document.getElementById("currentLink").innerText = "No link found.";
-          }
-        })
-        .catch(err => console.error(err));
+    if(result.success){
+        const linksDiv = document.getElementById('links');
+        linksDiv.innerHTML = "<h3>Your Links:</h3><ul>";
+        result.links.forEach(link => {
+            linksDiv.innerHTML += `<li><a href="${link}" target="_blank">${link}</a></li>`;
+        });
+        linksDiv.innerHTML += "</ul>";
+        linksDiv.style.display = 'block';
+    } else {
+        alert(result.message);
     }
-
-    function updateLink() {
-      const newLink = document.getElementById("newLink").value;
-      if (!newLink) return alert("Please enter a link");
-      db.collection("serverLinks").doc(userUID).set({ link: newLink })
-        .then(() => {
-          alert("Link updated!");
-          loadLink();
-        })
-        .catch(err => console.error(err));
-    }
-  </script>
+}
+</script>
 </body>
 </html>
