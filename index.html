@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futuristic Login</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: radial-gradient(circle at top left, #0f0c29, #302b63, #24243e);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .container {
+    background: rgba(0,0,0,0.7);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 0 30px #00ffff;
+    text-align: center;
+    width: 380px;
+  }
+  h2 { margin-bottom: 20px; color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+  input[type="email"], input[type="password"] {
+    width: 80%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none;
+    outline: none; font-size: 16px; background: rgba(255,255,255,0.1);
+    color: #fff; box-shadow: 0 0 10px #00ffff inset;
+  }
+  label { font-size: 14px; display: block; margin: 8px 0; }
+  button {
+    padding: 12px 25px; border: none; border-radius: 8px; background: #00ffff;
+    color: #000; font-weight: bold; font-size: 16px; cursor: pointer;
+    transition: 0.3s; box-shadow: 0 0 15px #00ffff; margin-top: 10px;
+  }
+  button:hover { box-shadow: 0 0 25px #ff00ff, 0 0 50px #00ffff; transform: scale(1.05); }
+  a { display: inline-block; margin: 10px 0; color: #00ffff; text-decoration: none; font-weight: bold; transition: 0.3s; }
+  a:hover { color: #ff00ff; text-shadow: 0 0 10px #ff00ff; }
+  #afterLogin { margin-top: 20px; display: none; }
+  #greeting { font-size: 18px; color: #00ff99; margin-bottom: 15px; }
+  #errorMessage { color: #ff4d4d; margin-top: 10px; font-weight: bold; }
+  label[for="remember"] { display: inline-flex; align-items: center; font-size: 14px; margin-top: 10px; }
+  input[type="checkbox"] { margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Secure Login</h2>
+  <form id="loginForm">
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
+    <label for="remember"><input type="checkbox" id="remember"> Remember Me</label>
+    <button type="submit">Login</button>
+  </form>
+  <p id="errorMessage"></p>
+
+  <div id="afterLogin">
+    <div id="greeting"></div>
+    <h3 id="username"></h3>
+    <a id="driveLink" href="#" target="_blank">Go to Google Drive</a><br>
+    <button id="adminPanelBtn">Admin Panel</button><br>
+    <button id="logoutBtn" style="background:#ff4d4d;color:#fff;">Logout</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC-BfyabQukg0o5X71vGQ0pbiDpbyHupr4",
+  authDomain: "page-1-9f164.firebaseapp.com",
+  projectId: "page-1-9f164",
+  storageBucket: "page-1-9f164.firebasestorage.app",
+  messagingSenderId: "136528254875",
+  appId: "1:136528254875:web:f932b653c6692a02e1333e",
+  measurementId: "G-G3FR134L6M"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const loginForm = document.getElementById("loginForm");
+const errorMessage = document.getElementById("errorMessage");
+const afterLogin = document.getElementById("afterLogin");
+const driveLink = document.getElementById("driveLink");
+const adminPanelBtn = document.getElementById("adminPanelBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const greeting = document.getElementById("greeting");
+const usernameEl = document.getElementById("username");
+const rememberCheck = document.getElementById("remember");
+
+// Greeting function
+function getGreeting() {
+  const hour = new Date().getHours();
+  if(hour < 12) return "Good Morning";
+  else if(hour < 18) return "Good Afternoon";
+  else return "Good Evening";
+}
+
+// Login submit
+loginForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      errorMessage.textContent = "";
+      loginForm.style.display = "none";
+      afterLogin.style.display = "block";
+
+      greeting.textContent = getGreeting();
+      usernameEl.textContent = "Welcome, Akash";
+
+      if(rememberCheck.checked) {
+        localStorage.setItem("rememberMe", "true");
+        localStorage.setItem("userEmail", email);
+      }
+
+      get(ref(db, 'settings/driveLink')).then((snapshot) => {
+        if(snapshot.exists()) driveLink.href = snapshot.val();
+      });
+
+      get(ref(db, 'settings/adminEmail')).then((snapshot) => {
+        if(snapshot.exists() && snapshot.val() !== email) {
+          adminPanelBtn.style.display = "none";
+        }
+      });
+    })
+    .catch((error) => {
+      errorMessage.textContent = error.message;
+    });
+});
+
+// Auto-fill email if Remember Me
+window.addEventListener("load", () => {
+  const remember = localStorage.getItem("rememberMe");
+  const savedEmail = localStorage.getItem("userEmail");
+  if(remember && savedEmail) {
+    document.getElementById("email").value = savedEmail;
+  }
+});
+
+// Logout
+logoutBtn.addEventListener("click", () => {
+  signOut(auth).then(() => {
+    afterLogin.style.display = "none";
+    loginForm.style.display = "block";
+    localStorage.removeItem("rememberMe");
+    localStorage.removeItem("userEmail");
+  });
+});
+
+// Admin panel
+adminPanelBtn.addEventListener("click", () => {
+  window.location.href = "admin.html";
+});
+</script>
+</body>
+</html>

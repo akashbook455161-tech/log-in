@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<style>
+  body { margin:0; font-family:'Segoe UI', sans-serif; background: linear-gradient(135deg,#0f0c29,#302b63,#24243e); color:#fff; display:flex; justify-content:center; align-items:center; height:100vh; }
+  .container { background: rgba(0,0,0,0.8); padding:40px; border-radius:15px; box-shadow:0 0 30px #ff00ff; width:400px; text-align:center; }
+  h2 { color:#ff00ff; text-shadow:0 0 10px #ff00ff; margin-bottom:30px; }
+  input { width:80%; padding:12px; margin:12px 0; border-radius:8px; border:none; outline:none; font-size:16px; background:rgba(255,255,255,0.1); color:#fff; box-shadow:0 0 10px #ff00ff inset; }
+  button { padding:12px 25px; margin:10px 0; border:none; border-radius:8px; background:#ff00ff; color:#000; font-weight:bold; cursor:pointer; transition:0.3s; box-shadow:0 0 15px #ff00ff; }
+  button:hover { box-shadow:0 0 25px #00ffff,0 0 50px #ff00ff; transform:scale(1.05); }
+  #message { margin-top:10px; font-weight:bold; color:#00ff99; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Admin Panel</h2>
+  <label>Google Drive Link:</label><br>
+  <input type="text" id="driveInput"><br>
+  <button id="saveDrive">Save Drive Link</button><br><br>
+  <label>Change Admin Password:</label><br>
+  <input type="password" id="newPassword"><br>
+  <button id="changePassword">Change Password</button>
+  <p id="message"></p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getAuth, updatePassword } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyC-BfyabQukg0o5X71vGQ0pbiDpbyHupr4",
+  authDomain:"page-1-9f164.firebaseapp.com",
+  projectId:"page-1-9f164",
+  storageBucket:"page-1-9f164.firebasestorage.app",
+  messagingSenderId:"136528254875",
+  appId:"1:136528254875:web:f932b653c6692a02e1333e",
+  measurementId:"G-G3FR134L6M"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const driveInput = document.getElementById("driveInput");
+const saveDrive = document.getElementById("saveDrive");
+const newPassword = document.getElementById("newPassword");
+const changePassword = document.getElementById("changePassword");
+const message = document.getElementById("message");
+
+get(ref(db,'settings/driveLink')).then((snapshot)=>{if(snapshot.exists()) driveInput.value = snapshot.val();});
+
+saveDrive.addEventListener("click",()=>{
+  set(ref(db,'settings/driveLink'),driveInput.value);
+  message.textContent="Drive link updated!";
+});
+
+changePassword.addEventListener("click",()=>{
+  const user = auth.currentUser;
+  if(user){
+    updatePassword(user,newPassword.value).then(()=>{message.textContent="Password changed!";}).catch((err)=>{message.textContent=err.message;});
+  } else {
+    message.textContent="Please log in first!";
+  }
+});
+</script>
+</body>
+</html>
