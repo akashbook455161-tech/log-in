@@ -1,155 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Akash Server</title>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Server Access</title>
+<style>
     body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #4facfe, #00f2fe);
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to right, #4facfe, #00f2fe);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
     }
-    .container {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 30px;
-      border-radius: 15px;
-      backdrop-filter: blur(10px);
-      text-align: center;
-      width: 300px;
+    .card {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+        width: 300px;
+        text-align: center;
     }
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 20px;
+    h2 {
+        margin-bottom: 1.5rem;
+        color: #333;
     }
     input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: none;
-      border-radius: 8px;
-      outline: none;
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border: 1px solid #ccc;
+        border-radius: 8px;
     }
     button {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      background: #ff9800;
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: 0.3s;
+        width: 100%;
+        padding: 10px;
+        background-color: #4facfe;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 10px;
     }
     button:hover {
-      background: #e68900;
+        background-color: #00c6fb;
     }
-    #serverBtn {
-      display: none;
-      margin-top: 20px;
-      font-size: 1.2rem;
-      background: #28a745;
+    #serverSection {
+        display: none;
+        text-align: center;
     }
-    #serverBtn:hover {
-      background: #218838;
+    .server-icon {
+        font-size: 60px;
+        color: #4facfe;
+        cursor: pointer;
+        margin-top: 20px;
     }
-  </style>
+</style>
 </head>
 <body>
 
-<div class="container" id="loginContainer">
-  <h1>Login to Server</h1>
-  <input type="email" id="email" placeholder="Email" required />
-  <input type="password" id="password" placeholder="Password" required />
-  <button id="loginBtn">Login</button>
+<div class="card" id="loginCard">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <p id="status" style="color:red;"></p>
 </div>
 
-<div class="container" id="serverContainer" style="display:none;">
-  <h1 id="greeting"></h1>
-  <button id="serverBtn">Go to Server</button>
-  <button id="logoutBtn" style="margin-top:10px; background:#dc3545;">Logout</button>
+<div class="card" id="serverSection">
+    <h2 id="greeting"></h2>
+    <p>Access your <b>Server</b></p>
+    <a id="serverLink" target="_blank">
+        <div class="server-icon">🖥️</div>
+        <p>Go to Server</p>
+    </a>
 </div>
 
-<script type="module">
-  // Import Firebase SDKs
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc } 
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js"></script>
 
-  // Your Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyC-BfyabQukg0o5X71vGQ0pbiDpbyHupr4",
-    authDomain: "page-1-9f164.firebaseapp.com",
-    projectId: "page-1-9f164",
-    storageBucket: "page-1-9f164.firebasestorage.app",
-    messagingSenderId: "136528254875",
-    appId: "1:136528254875:web:f932b653c6692a02e1333e",
-    measurementId: "G-G3FR134L6M"
-  };
+<script>
+    // Your Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyC-BfyabQukg0o5X71vGQ0pbiDpbyHupr4",
+        authDomain: "page-1-9f164.firebaseapp.com",
+        projectId: "page-1-9f164",
+        storageBucket: "page-1-9f164.firebasestorage.app",
+        messagingSenderId: "136528254875",
+        appId: "1:136528254875:web:f932b653c6692a02e1333e",
+        measurementId: "G-G3FR134L6M"
+    };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+    // Init Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-  const loginContainer = document.getElementById("loginContainer");
-  const serverContainer = document.getElementById("serverContainer");
-  const greeting = document.getElementById("greeting");
-  const serverBtn = document.getElementById("serverBtn");
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
+    // Allowed UID
+    const allowedUID = "dzcExlAs9GbnTsayTUTIxMRA6Mk2";
 
-  // Login
-  loginBtn.addEventListener("click", async () => {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      alert("Login Failed: " + error.message);
+    document.getElementById("loginBtn").addEventListener("click", () => {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        auth.signInWithEmailAndPassword(email, password)
+            .then(userCredential => {
+                if (userCredential.user.uid === allowedUID) {
+                    showServerPage();
+                } else {
+                    document.getElementById("status").innerText = "Access Denied!";
+                }
+            })
+            .catch(error => {
+                document.getElementById("status").innerText = error.message;
+            });
+    });
+
+    function showServerPage() {
+        // Hide login
+        document.getElementById("loginCard").style.display = "none";
+        // Show greeting
+        document.getElementById("greeting").innerText = "Good Morning Akash";
+        // Fetch link from Firestore
+        db.collection("data").doc(allowedUID).get()
+            .then(doc => {
+                if (doc.exists) {
+                    document.getElementById("serverLink").href = doc.data().link;
+                    document.getElementById("serverSection").style.display = "block";
+                } else {
+                    document.getElementById("greeting").innerText = "No Server Link Found!";
+                }
+            })
+            .catch(error => {
+                document.getElementById("greeting").innerText = "Error: " + error.message;
+            });
     }
-  });
-
-  // Auth state change listener
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      loginContainer.style.display = "none";
-      serverContainer.style.display = "block";
-
-      // Time-based greeting
-      let hours = new Date().getHours();
-      let greetText = "Good Morning";
-      if (hours >= 12 && hours < 17) greetText = "Good Afternoon";
-      else if (hours >= 17) greetText = "Good Evening";
-      greeting.textContent = `${greetText} Akash`;
-
-      // Fetch Server link from Firestore (data / server1 / link)
-      const docRef = doc(db, "data", "server1");
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const link = docSnap.data().link;
-        serverBtn.style.display = "block";
-        serverBtn.onclick = () => window.open(link, "_blank");
-      } else {
-        alert("No server link found.");
-      }
-    } else {
-      loginContainer.style.display = "block";
-      serverContainer.style.display = "none";
-    }
-  });
-
-  // Logout
-  logoutBtn.addEventListener("click", async () => {
-    await signOut(auth);
-  });
 </script>
 
 </body>
